@@ -11,6 +11,28 @@ interface ChatMessageProps {
   message: ChatMessage;
 }
 
+const renderContentWithLinks = (content: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = content.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline hover:text-primary/90"
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 export default function ChatMessageComponent({message}: ChatMessageProps) {
   const isUser = message.role === 'user';
   const {speak, isSpeaking} = useTextToSpeech();
@@ -39,7 +61,7 @@ export default function ChatMessageComponent({message}: ChatMessageProps) {
             : 'bg-muted'
         )}
       >
-        <p className="whitespace-pre-wrap">{message.content}</p>
+        <p className="whitespace-pre-wrap">{renderContentWithLinks(message.content)}</p>
         {!isUser && (
           <Button
             size="icon"

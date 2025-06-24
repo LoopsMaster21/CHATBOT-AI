@@ -94,9 +94,98 @@ const getRelevantInfo = ai.defineTool({
     },
     {
       question: 'I forgot my password or email',
-      answer: 'For a forgotten password, on the sign-in page, click "Forgot Password?". You will be prompted to enter your email address to receive a password reset link. If you forgot which email you used, you may need to create a new account.',
-      keywords: ['forgot password', 'forgot email', 'reset password'],
-    }
+      answer: 'For a forgotten password, on the sign-in page, click "Reset your password?" and follow the instructions. For a forgotten email, please contact our Online Customer Care team via the Contact Us page.',
+      keywords: ['forgot password', 'reset password', 'forgot email'],
+    },
+    {
+      question: 'Update address or personal details',
+      answer: 'Visit the \'My Account\' page to manage "Addresses" or "Personal Details".',
+      keywords: ['update address', 'change details', 'update information'],
+    },
+    {
+      question: 'Manage my Payment card details',
+      answer: 'Visit \'Payment Cards\' under \'My Account\'.',
+      keywords: ['payment card', 'update card', 'credit card'],
+    },
+      // Grocery Orders
+    {
+      question: 'Can I choose a time and day for my groceries delivery?',
+      answer: 'Yes, you can choose an available delivery slot up to 30 days in advance.',
+      keywords: ['delivery time', 'schedule delivery', 'delivery slot'],
+    },
+    {
+      question: 'Is there a minimum order spend?',
+      answer: 'Yes, the minimum order value is $30.',
+      keywords: ['minimum order', 'minimum spend'],
+    },
+    {
+      question: 'How do I cancel my order?',
+      answer: 'You can cancel an order from the \'My Orders\' page only if its status is \'Order Received\'. You cannot cancel if it is \'Under Preparation\', \'Processed\', or \'Delivered\'.',
+      keywords: ['cancel order', 'stop order'],
+    },
+      // Products & Pricing
+    {
+      question: 'Are the prices on the website the same as in-store prices?',
+      answer: 'Yes, prices online are the same as our Hazmieh and Elissar branches. In-store promotions may not always apply online.',
+      keywords: ['price match', 'online price', 'in-store price'],
+    },
+    {
+      question: 'Is VAT (Value-Added Tax) Included in the Price?',
+      answer: 'Yes, the standard 11% VAT is included in the price.',
+      keywords: ['vat', 'tax', 'value added tax'],
+    },
+      // Mobile App
+    {
+      question: 'What features does the mobile app have?',
+      answer: 'The Spinneys app lets you shop 10,000+ products, create orders, manage lists, link your loyalty card, and get offers.',
+      keywords: ['mobile app', 'app features', 'download app'],
+    },
+      // Offers & Promotions
+    {
+      question: 'What is a coupon and how does it work?',
+      answer: 'A coupon is a code entered at checkout for a discount.',
+      keywords: ['coupon', 'voucher', 'promo code'],
+    },
+    {
+      question: 'Cash Back terms & conditions',
+      answer: 'You collect cashback by purchasing items with cashback signs. Your cashback balance appears in your wallet at checkout, and you can choose how much to use. Cashback amounts are valid for 1 to 2 years.',
+      keywords: ['cashback', 'cash back', 'wallet'],
+    },
+      // Grocery Delivery
+    {
+      question: 'Do you charge for delivery?',
+      answer: 'Yes.',
+      keywords: ['delivery charge', 'delivery fee', 'shipping cost'],
+    },
+    {
+      question: 'What if I miss my delivery?',
+      answer: 'If you miss your delivery, the driver will proceed with other deliveries. If they receive confirmation you can receive the order, they will return. Otherwise, the products will be returned, you will be charged for delivery, and the order will need to be rescheduled.',
+      keywords: ['missed delivery', 'not home', 'reschedule delivery'],
+    },
+      // Returns & Refunds
+    {
+      question: 'What is your refund policy?',
+      answer: 'We have a 30-day money-back guarantee. You can return products to any Spinneys store in Lebanon with proof of purchase. Perishable goods can be returned within 48 hours.',
+      keywords: ['refund policy', 'return policy', 'money back'],
+    },
+      // Payments & Billing
+    {
+      question: 'What payment methods are accepted?',
+      answer: 'We accept Visa, Mastercard, American Express, Cash on Delivery, and Credit/Debit Card on Delivery.',
+      keywords: ['payment methods', 'pay', 'credit card', 'cash'],
+    },
+      // Loyalty Program
+    {
+      question: 'How do I earn loyalty points?',
+      answer: 'Earn 10 points for every 15,000L.L spent. Look for extra points items and double points days.',
+      keywords: ['loyalty points', 'rewards', 'earn points'],
+    },
+      // eGift Cards
+    {
+      question: 'How do I use my electronic gift cards?',
+      answer: 'You can enter the gift card code during checkout or redeem it as credit in your account under the gift card section in \'My Account\'.',
+      keywords: ['gift card', 'egift', 'redeem card'],
+    },
   ];
 
   const lowerCaseQuestion = input.question.toLowerCase();

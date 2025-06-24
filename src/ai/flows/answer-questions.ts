@@ -76,6 +76,11 @@ const getRelevantInfo = ai.defineTool({
       keywords: ['brand', 'brands', 'what brands'],
       url: 'https://www.spinneyslebanon.com/default/brands',
     },
+    {
+      topic: 'Contact Information',
+      keywords: ['contact', 'call', 'email', 'address', 'help', 'support', 'person', 'human'],
+      url: 'https://www.spinneyslebanon.com/default/contact/',
+    },
   ];
 
   const FAQ_DATA = [
@@ -112,7 +117,7 @@ const getRelevantInfo = ai.defineTool({
     },
     {
       question: 'I\'m having problems logging into my account',
-      answer: 'We are sorry to hear that. Try Clearing your browser cookies and logging in again. If the problem persists, please contact online customer care whose contact details can be found on our Contact Us page and they will help you solve the problem.',
+      answer: 'We are sorry to hear that. Try Clearing your browser cookies and logging in again. If the problem persists, please contact our Online Customer Care team whose contact details can be found on our Contact Us page and they will help you solve the problem.',
       keywords: ['login problem', 'can\'t log in', 'logging in'],
     },
     {
@@ -503,6 +508,22 @@ const getRelevantInfo = ai.defineTool({
       question: 'What if I can’t find my eGift card?',
       answer: 'If the recipient didn\'t receive the gift card codes by email, please contact our Online Customer Care team.',
       keywords: ['lost gift card', 'find egift card', 'didn\'t receive gift card'],
+    },
+    // Contact & Support
+    {
+      question: 'How can I talk to a real person or get human help?',
+      answer: 'For human assistance, you can reach our Call Center at 1521. We are available 7 days a week, from 10am to 10pm.',
+      keywords: ['human', 'person', 'people', 'help', 'real person', 'talk to someone', 'call center', 'support agent', 'customer service', 'phone'],
+    },
+    {
+      question: 'What is the address of the head office?',
+      answer: 'Our Head Office is located at: Dbayeh Highway, Spinneys Headquarters Tower, Center 509, Metn - Lebanon. P.O. Box: 90-1532 Jdeidet El Metn, Lebanon.',
+      keywords: ['head office', 'headquarters', 'main office', 'office address', 'location'],
+    },
+    {
+      question: 'How can I contact Spinneys?',
+      answer: 'You can find all our contact details on our contact page: https://www.spinneyslebanon.com/default/contact/. For immediate assistance, you can call our Call Center at 1521 (10am-10pm).',
+      keywords: ['contact', 'contact us', 'phone number', 'email'],
     },
   ];
 

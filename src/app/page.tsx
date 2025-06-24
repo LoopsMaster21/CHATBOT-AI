@@ -25,14 +25,8 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const chatHistory = newMessages.slice(0, -1).map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
-
       const botResponse = await getBotResponse({
-        question: messageContent,
-        chatHistory: chatHistory,
+        query: messageContent,
       });
 
       const botMessage: ChatMessage = {

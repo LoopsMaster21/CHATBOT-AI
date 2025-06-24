@@ -1,11 +1,10 @@
 'use server';
-
 /**
- * @fileOverview An AI agent that answers questions about Spinneys products, services, and policies.
+ * @fileOverview This file defines a Genkit flow for generating chatbot text responses.
  *
- * - answerQuestion - A function that handles the question answering process.
- * - AnswerQuestionInput - The input type for the answerQuestion function.
- * - AnswerQuestionOutput - The return type for the answerQuestion function.
+ * - chatbotRespondsWithText - A function that generates a chatbot text response.
+ * - ChatbotRespondsWithTextInput - The input type for the chatbotRespondsWithText function.
+ * - ChatbotRespondsWithTextOutput - The return type for the chatbotRespondsWithText function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -15,6 +14,7 @@ const KnowledgeEntrySchema = z.object({
   topic: z.string(),
   keywords: z.array(z.string()),
   url: z.string().url(),
+  answer: z.string().optional(),
 });
 
 const FaqEntrySchema = z.object({
@@ -22,17 +22,6 @@ const FaqEntrySchema = z.object({
   answer: z.string(),
   keywords: z.array(z.string()),
 });
-
-const AnswerQuestionInputSchema = z.object({
-  question: z.string().describe('The question to answer.'),
-  chatHistory: z.array(z.object({role: z.string(), content: z.string()})).optional(),
-});
-export type AnswerQuestionInput = z.infer<typeof AnswerQuestionInputSchema>;
-
-const AnswerQuestionOutputSchema = z.object({
-  answer: z.string().describe('The answer to the question.'),
-});
-export type AnswerQuestionOutput = z.infer<typeof AnswerQuestionOutputSchema>;
 
 const faqTool = ai.defineTool(
   {
@@ -87,11 +76,13 @@ const faqTool = ai.defineTool(
         topic: 'Human Help/Support',
         keywords: ['human', 'person', 'people', 'real person', 'talk to someone', 'call center', 'support agent', 'customer service', 'phone'],
         answer: 'For human assistance, you can reach our Call Center at 1521. We are available 7 days a week, from 10am to 10pm.',
+        url: 'https://www.spinneyslebanon.com/default/contact/',
       },
       {
         topic: 'Head Office Location',
         keywords: ['head office', 'headquarters', 'main office', 'office address', 'location'],
         answer: 'Our Head Office is located at: Dbayeh Highway, Spinneys Headquarters Tower, Center 509, Metn - Lebanon. P.O. Box: 90-1532 Jdeidet El Metn, Lebanon.',
+        url: 'https://www.spinneyslebanon.com/default/contact/',
       },
     ];
 
@@ -608,50 +599,54 @@ const faqTool = ai.defineTool(
     const relevantFaq = FAQ_DATA.filter(item => item.keywords.some(kw => lowerCaseQuestion.includes(kw)));
 
     return {
-      knowledge: relevantKnowledge.map(({ topic, url }) => ({ topic, url, keywords: [] })),
+      knowledge: relevantKnowledge.map(({ topic, url, answer }) => ({ topic, url, keywords: [], answer })),
       faq: relevantFaq,
     };
   }
 );
 
 
-export async function answerQuestion(input: AnswerQuestionInput): Promise<AnswerQuestionOutput> {
-  return answerQuestionFlow(input);
+const ChatbotRespondsWithTextInputSchema = z.object({
+  query: z.string().describe('The user query to the chatbot.'),
+});
+export type ChatbotRespondsWithTextInput = z.infer<typeof ChatbotRespondsWithTextInputSchema>;
+
+const ChatbotRespondsWithTextOutputSchema = z.object({
+  textResponse: z.string().describe('The text response from the chatbot.'),
+});
+export type ChatbotRespondsWithTextOutput = z.infer<typeof ChatbotRespondsWithTextOutputSchema>;
+
+export async function chatbotRespondsWithText(input: ChatbotRespondsWithTextInput): Promise<ChatbotRespondsWithTextOutput> {
+  return chatbotRespondsWithTextFlow(input);
 }
 
-const answerQuestionPrompt = ai.definePrompt({
-  name: 'answerQuestionPrompt',
-  input: {schema: AnswerQuestionInputSchema},
-  output: {schema: AnswerQuestionOutputSchema},
-  tools: [faqTool],
-  prompt: `You are Spinneys Chat, an AI chatbot for Spinneys Lebanon. Your primary goal is to answer user questions and provide helpful information related to Spinneys.
+const systemPrompt = `You are Spinneys Chat, an AI chatbot for Spinneys Lebanon. Your primary goal is to answer user questions and provide helpful information related to Spinneys.
 You can converse in both English and Arabic.
 IMPORTANT: Respond ONLY in the language used by the user. For example, if the user asks a question in Arabic, your entire response must be in Arabic. If they ask in English, respond in English.
 Maintain your helpful Spinneys persona.
 
-To answer user questions, you MUST use the provided 'faqTool'. Based on the tool's output, follow these rules:
-1. If the tool returns one or more URLs for a specialty page, your primary goal is to provide those links. Form a direct, helpful sentence that includes the *exact* URL returned by the tool. Do not use placeholders like '[URL]'. Do not ask clarifying questions if a relevant link is found.
-2. If the tool returns a specific FAQ answer, use that information to directly answer the user's question.
-3. If the tool does not return any relevant information, or for general conversation (like "hello"), provide a helpful and informative response in character.
-4. If the question is not related to Spinneys, politely state that you can only assist with Spinneys-related inquiries.
+To answer user questions, you MUST use the provided 'faqTool'. This tool allows you to search for information on various topics like specialty pages (beauty, pets, promotions), account management, orders, products, payments, and more.
 
-Chat History:
-{{#each chatHistory}}
-{{this.role}}: {{this.content}}
-{{/each}}
+If the user's question is not covered by the tool, or is a general conversation (like "hello" or "how are you?"), provide a helpful and informative response in character. If the question is not related to Spinneys, politely state that you can only assist with Spinneys-related inquiries.
+`;
 
-Question: {{{question}}}
-`,
-});
 
-const answerQuestionFlow = ai.defineFlow(
+const chatbotRespondsWithTextFlow = ai.defineFlow(
   {
-    name: 'answerQuestionFlow',
-    inputSchema: AnswerQuestionInputSchema,
-    outputSchema: AnswerQuestionOutputSchema,
+    name: 'chatbotRespondsWithTextFlow',
+    inputSchema: ChatbotRespondsWithTextInputSchema,
+    outputSchema: ChatbotRespondsWithTextOutputSchema,
   },
-  async input => {
-    const {output} = await answerQuestionPrompt(input);
-    return output!;
+  async (input) => {
+    const { text } = await ai.generate({
+      model: 'googleai/gemini-2.0-flash',
+      prompt: input.query,
+      system: systemPrompt,
+      tools: [faqTool],
+    });
+
+    return {
+      textResponse: text,
+    };
   }
 );

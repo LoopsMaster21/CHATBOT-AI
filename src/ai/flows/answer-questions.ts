@@ -626,8 +626,7 @@ export async function chatbotRespondsWithText(input: ChatbotRespondsWithTextInpu
 }
 
 const systemPrompt = `You are Spinneys Chat, an AI chatbot for Spinneys Lebanon. Your primary goal is to answer user questions and provide helpful information related to Spinneys.
-You are having a continuous conversation with a user. Use the provided conversation history to understand the context of their questions.
-
+You are having a continuous conversation with a user. You MUST refer to the conversation history provided in the messages to understand the full context of the user's request. The last message is the user's most recent query.
 You can converse in both English and Arabic.
 IMPORTANT: Respond ONLY in the language used by the user. For example, if the user asks a question in Arabic, your entire response must be in Arabic. If they ask in English, respond in English.
 Maintain your helpful Spinneys persona.
@@ -645,15 +644,16 @@ const chatbotRespondsWithTextFlow = ai.defineFlow(
     outputSchema: ChatbotRespondsWithTextOutputSchema,
   },
   async (input) => {
-    const history: Message[] = (input.chatHistory || []).map(msg => ({
+    // Combine history and the new query into a single messages array.
+    const messages: Message[] = (input.chatHistory || []).map(msg => ({
         role: msg.role as 'user' | 'model',
         content: [{text: msg.content}],
     }));
+    messages.push({ role: 'user', content: [{ text: input.query }] });
 
     const { text } = await ai.generate({
       model: 'googleai/gemini-2.0-flash',
-      prompt: input.query,
-      history,
+      messages: messages,
       system: systemPrompt,
       tools: [faqTool],
     });
@@ -663,5 +663,3 @@ const chatbotRespondsWithTextFlow = ai.defineFlow(
     };
   }
 );
-
-    

@@ -8,6 +8,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {type Message} from 'genkit/ai';
 import {z} from 'genkit';
 
 const KnowledgeEntrySchema = z.object({
@@ -608,6 +609,10 @@ const faqTool = ai.defineTool(
 
 const ChatbotRespondsWithTextInputSchema = z.object({
   query: z.string().describe('The user query to the chatbot.'),
+  chatHistory: z.array(z.object({
+    role: z.enum(['user', 'model']),
+    content: z.string()
+  })).optional().describe('The history of the conversation.'),
 });
 export type ChatbotRespondsWithTextInput = z.infer<typeof ChatbotRespondsWithTextInputSchema>;
 
@@ -638,9 +643,15 @@ const chatbotRespondsWithTextFlow = ai.defineFlow(
     outputSchema: ChatbotRespondsWithTextOutputSchema,
   },
   async (input) => {
+    const history: Message[] = (input.chatHistory || []).map(msg => ({
+        role: msg.role as 'user' | 'model',
+        content: [{text: msg.content}],
+    }));
+
     const { text } = await ai.generate({
       model: 'googleai/gemini-2.0-flash',
       prompt: input.query,
+      history,
       system: systemPrompt,
       tools: [faqTool],
     });

@@ -25,8 +25,10 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      const chatHistoryForApi = newMessages.slice(0, -1);
       const botResponse = await getBotResponse({
         query: messageContent,
+        chatHistory: chatHistoryForApi,
       });
 
       const botMessage: ChatMessage = {

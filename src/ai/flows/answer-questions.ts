@@ -34,10 +34,10 @@ const AnswerQuestionOutputSchema = z.object({
 });
 export type AnswerQuestionOutput = z.infer<typeof AnswerQuestionOutputSchema>;
 
-const getRelevantInfo = ai.defineTool(
+const faqTool = ai.defineTool(
   {
-    name: 'getRelevantInfo',
-    description: 'Retrieves relevant information about Spinneys products, services, and policies from a knowledge base and FAQ.',
+    name: 'faqTool',
+    description: 'Searches for information on various topics like specialty pages (beauty, pets, promotions), account management, orders, products, payments, and more.',
     inputSchema: z.object({
       question: z.string().describe('The question to use to find relevant information.'),
     }),
@@ -623,17 +623,15 @@ const answerQuestionPrompt = ai.definePrompt({
   name: 'answerQuestionPrompt',
   input: {schema: AnswerQuestionInputSchema},
   output: {schema: AnswerQuestionOutputSchema},
-  tools: [getRelevantInfo],
-  prompt: `You are a helpful and friendly customer service assistant for Spinneys, a supermarket chain in Lebanon. Your primary goal is to answer user questions accurately and concisely.
+  tools: [faqTool],
+  prompt: `You are Spinneys Chat, an AI chatbot for Spinneys Lebanon. Your primary goal is to answer user questions and provide helpful information related to Spinneys.
+You can converse in both English and Arabic.
+IMPORTANT: Respond ONLY in the language used by the user. For example, if the user asks a question in Arabic, your entire response must be in Arabic. If they ask in English, respond in English.
+Maintain your helpful Spinneys persona.
 
-You have access to a tool called 'getRelevantInfo' that can retrieve information about Spinneys products, services, policies, and frequently asked questions. You MUST use this tool to find relevant information to answer the user's question.
+To answer user questions, you MUST use the provided 'faqTool'. This tool allows you to search for information on various topics like specialty pages (beauty, pets, promotions), account management, orders, products, payments, and more.
 
-- If the tool returns a URL for a relevant topic, you MUST include this URL in your answer.
-- You MUST be bilingual. Respond in English to English questions and in Arabic to Arabic questions.
-- If the user's question is unclear, ask for clarification.
-- If the information is not available even after using the tool, state that you do not have that information in a helpful way.
-- Keep track of the conversation history to understand the context.
-- Your tone should be conversational and not robotic. Do not just repeat the information from the tool verbatim. Instead, use it to formulate a natural-sounding response.
+If the user's question is not covered by the tool, or is a general conversation (like "hello" or "how are you?"), provide a helpful and informative response in character. If the question is not related to Spinneys, politely state that you can only assist with Spinneys-related inquiries.
 
 Chat History:
 {{#each chatHistory}}

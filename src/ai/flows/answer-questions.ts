@@ -94,4 +94,57 @@ const getRelevantInfo = ai.defineTool({
     },
     {
       question: 'I forgot my password or email',
-      answer: 'For a forgotten password, on the sign-in page, click \
+      answer: 'For a forgotten password, on the sign-in page, click "Forgot Password?". You will be prompted to enter your email address to receive a password reset link. If you forgot which email you used, you may need to create a new account.',
+      keywords: ['forgot password', 'forgot email', 'reset password'],
+    }
+  ];
+
+  const lowerCaseQuestion = input.question.toLowerCase();
+
+  const relevantKnowledge = KNOWLEDGE_DATA.filter(item =>
+    item.keywords.some(kw => lowerCaseQuestion.includes(kw))
+  );
+
+  const relevantFaq = FAQ_DATA.filter(item =>
+    item.keywords.some(kw => lowerCaseQuestion.includes(kw))
+  );
+
+  return {
+    knowledge: relevantKnowledge,
+    faq: relevantFaq,
+  };
+});
+
+export async function answerQuestion(input: AnswerQuestionInput): Promise<AnswerQuestionOutput> {
+  return answerQuestionFlow(input);
+}
+
+const answerQuestionPrompt = ai.definePrompt({
+  name: 'answerQuestionPrompt',
+  input: {schema: AnswerQuestionInputSchema},
+  output: {schema: AnswerQuestionOutputSchema},
+  tools: [getRelevantInfo],
+  system: `You are a helpful customer service assistant for Spinneys, a supermarket chain in Lebanon. Your goal is to answer user questions accurately and concisely based on the information provided by the getRelevantInfo tool. If the user's question is unclear, ask for clarification. If the information is not available, state that you do not have that information. Keep track of the conversation history to understand context. Always be friendly and professional.`,
+  prompt: `Answer the following question based on the provided chat history.
+
+Chat History:
+{{#each chatHistory}}
+{{this.role}}: {{this.content}}
+{{/each}}
+
+Question: {{{question}}}
+`,
+});
+
+
+const answerQuestionFlow = ai.defineFlow(
+  {
+    name: 'answerQuestionFlow',
+    inputSchema: AnswerQuestionInputSchema,
+    outputSchema: AnswerQuestionOutputSchema,
+  },
+  async (input) => {
+    const {output} = await answerQuestionPrompt(input);
+    return output!;
+  }
+);

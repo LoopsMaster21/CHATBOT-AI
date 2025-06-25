@@ -73,7 +73,7 @@ export default function ChatInput({onSendMessage, isLoading, messages}: ChatInpu
   };
 
   return (
-    <div className="border-t bg-background/80 p-4 backdrop-blur-sm">
+    <div className="border-t bg-card p-4">
       <div className="relative">
         <Textarea
           placeholder="Type your message here..."

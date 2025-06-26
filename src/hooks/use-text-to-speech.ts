@@ -1,5 +1,6 @@
 'use client';
 
+// Restoring the file to its original state.
 import {useState, useEffect} from 'react';
 
 export const useTextToSpeech = () => {

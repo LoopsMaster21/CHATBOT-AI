@@ -61,7 +61,9 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: ConvertTextToSpeechOutputSchema,
   },
   async ({text}) => {
-    const isArabic = /[\u0600-\u06FF]/.test(text);
+    // Remove URLs from the text to avoid confusing the TTS model.
+    const textForSpeech = text.replace(/(https?:\/\/[^\s]+)/g, '');
+    const isArabic = /[\u0600-\u06FF]/.test(textForSpeech);
     const voiceName = isArabic ? 'Zeta' : 'Triton'; // Using pre-built voice names
 
     const {media} = await ai.generate({
@@ -74,7 +76,7 @@ const textToSpeechFlow = ai.defineFlow(
           },
         },
       },
-      prompt: text,
+      prompt: textForSpeech,
     });
 
     if (!media) {

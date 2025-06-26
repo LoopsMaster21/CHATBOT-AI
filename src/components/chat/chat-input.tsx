@@ -46,21 +46,19 @@ export default function ChatInput({onSendMessage, isLoading, messages}: ChatInpu
       });
       return;
     }
-    const chatText = messages
-      .map(m => `${m.role === 'user' ? 'You' : 'Spinneys'}: ${m.content}`)
-      .join('\n\n');
-    const blob = new Blob([chatText], {type: 'text/plain'});
+    const chatJson = JSON.stringify(messages, null, 2);
+    const blob = new Blob([chatJson], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'spinneys-chat.txt';
+    a.download = 'spinneys-chat.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast({
       title: 'Chat downloaded',
-      description: 'Your chat has been saved as spinneys-chat.txt.',
+      description: 'Your chat has been saved as spinneys-chat.json.',
     });
   };
 

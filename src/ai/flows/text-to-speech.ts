@@ -63,18 +63,11 @@ const textToSpeechFlow = ai.defineFlow(
   async ({text}) => {
     // Remove URLs from the text to avoid confusing the TTS model.
     const textForSpeech = text.replace(/(https?:\/\/[^\s]+)/g, '');
-    const isArabic = /[\u0600-\u06FF]/.test(textForSpeech);
-    const voiceName = isArabic ? 'Algenib' : 'Triton'; // Using pre-built voice names
 
     const {media} = await ai.generate({
       model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
         responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: {voiceName},
-          },
-        },
       },
       prompt: textForSpeech,
     });

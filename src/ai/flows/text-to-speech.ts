@@ -62,7 +62,7 @@ const textToSpeechFlow = ai.defineFlow(
   },
   async ({text}) => {
     const isArabic = /[\u0600-\u06FF]/.test(text);
-    const voiceName = isArabic ? 'ar-XA-Standard-B' : 'en-GB-Standard-O';
+    const voiceName = isArabic ? 'Zeta' : 'Triton'; // Using pre-built voice names
 
     const {media} = await ai.generate({
       model: googleAI.model('gemini-2.5-flash-preview-tts'),

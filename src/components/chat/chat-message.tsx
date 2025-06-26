@@ -2,14 +2,10 @@
 
 import {type ChatMessage} from '@/lib/types';
 import {cn} from '@/lib/utils';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
+import {Avatar, AvatarFallback} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
-import {Volume2, User} from 'lucide-react';
+import {Volume2, User, Loader2, Square} from 'lucide-react';
 import {useTextToSpeech} from '@/hooks/use-text-to-speech';
-
-interface ChatMessageProps {
-  message: ChatMessage;
-}
 
 const renderContentWithLinks = (content: string) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -35,11 +31,31 @@ const renderContentWithLinks = (content: string) => {
 
 export default function ChatMessageComponent({message}: ChatMessageProps) {
   const isUser = message.role === 'user';
-  const {speak, isSpeaking} = useTextToSpeech();
+  const {speak, isFetching, isSpeaking} = useTextToSpeech();
 
   const handlePlayAudio = () => {
     speak(message.content);
   };
+  
+  const renderIcon = () => {
+    if (isFetching) {
+      return <Loader2 className="h-4 w-4 animate-spin" />;
+    }
+    if (isSpeaking) {
+      return <Square className="h-4 w-4" />;
+    }
+    return <Volume2 className="h-4 w-4" />;
+  };
+  
+  const getAriaLabel = () => {
+    if (isFetching) {
+      return 'Loading audio...';
+    }
+    if (isSpeaking) {
+      return 'Stop audio';
+    }
+    return 'Play message audio';
+  }
 
   return (
     <div
@@ -68,10 +84,10 @@ export default function ChatMessageComponent({message}: ChatMessageProps) {
             variant="ghost"
             onClick={handlePlayAudio}
             className="mt-2 h-6 w-6 text-muted-foreground"
-            aria-label="Play message audio"
-            disabled={isSpeaking}
+            aria-label={getAriaLabel()}
+            disabled={isFetching}
           >
-            <Volume2 className="h-4 w-4" />
+            {renderIcon()}
           </Button>
         )}
       </div>

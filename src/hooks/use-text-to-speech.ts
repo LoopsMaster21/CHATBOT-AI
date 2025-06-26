@@ -1,79 +1,69 @@
 'use client';
 
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useCallback, useRef, useEffect} from 'react';
+import {getAudioForText} from '@/app/actions';
 
 export const useTextToSpeech = () => {
+  const [isFetching, setIsFetching] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [supported, setSupported] = useState(false);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if ('speechSynthesis' in window) {
-      setSupported(true);
-      const handleVoicesChanged = () => {
-        setVoices(window.speechSynthesis.getVoices());
-      };
-      
-      // Voices may load asynchronously.
-      handleVoicesChanged();
-      window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-      
-      return () => {
-        window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-        window.speechSynthesis.cancel();
-      };
+    if (!audioRef.current) {
+        const audio = new Audio();
+        audio.onplay = () => setIsSpeaking(true);
+        audio.onpause = () => setIsSpeaking(false);
+        audio.onended = () => setIsSpeaking(false);
+        audio.onerror = (e) => {
+            console.error('Audio playback error', e);
+            setIsFetching(false);
+            setIsSpeaking(false);
+        };
+        audioRef.current = audio;
+    }
+    
+    return () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
     }
   }, []);
 
-  const speak = useCallback((text: string) => {
-    if (!supported || isSpeaking) return;
-
-    const utterance = new SpeechSynthesisUtterance(text);
-
-    // Detect if the text contains Arabic characters to select the correct voice.
-    const isArabic = /[\u0600-\u06FF]/.test(text);
-
-    const targetVoiceName = isArabic ? 'ar-XA-Standard-B' : 'en-GB-Standard-O';
-    const targetLangPrefix = isArabic ? 'ar' : 'en';
-    
-    // Set language on utterance for better system default fallback.
-    utterance.lang = isArabic ? 'ar-XA' : 'en-GB';
-
-    // 1. Try to find the user's specifically requested voice by name.
-    let selectedVoice = voices.find(voice => voice.name === targetVoiceName);
-
-    // 2. If not found, fall back to a standard Google voice for the language.
-    if (!selectedVoice) {
-        selectedVoice = voices.find(voice => 
-            voice.name.includes('Google') && voice.lang.startsWith(targetLangPrefix)
-        );
-    }
-    
-    // 3. If still not found, fall back to the first available voice for that language.
-    if (!selectedVoice) {
-        selectedVoice = voices.find(voice => voice.lang.startsWith(targetLangPrefix));
-    }
-
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-    } else {
-      // This might happen if voices haven't loaded yet.
-      // The browser will use its default voice for the utterance's lang property.
-      console.warn(`Could not find a suitable TTS voice. Using system default.`);
-    }
-    
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => {
+  const speak = useCallback(async (text: string) => {
+    if (isSpeaking) {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
         setIsSpeaking(false);
-    };
-    utterance.onerror = (e) => {
-        console.error("Speech synthesis error", e);
-        setIsSpeaking(false);
+        return;
     }
 
-    window.speechSynthesis.cancel(); // Clear any queued utterances.
-    window.speechSynthesis.speak(utterance);
-  }, [isSpeaking, supported, voices]);
+    if (isFetching) {
+        return;
+    }
 
-  return {speak, isSpeaking, supported};
+    setIsFetching(true);
+    setIsSpeaking(false);
+
+    try {
+      const result = await getAudioForText({text});
+
+      if (result.error || !result.audioDataUri) {
+        throw new Error(result.error || 'No audio data received');
+      }
+      
+      if (audioRef.current) {
+        audioRef.current.src = result.audioDataUri;
+        await audioRef.current.play();
+      }
+    } catch (error) {
+      console.error('Failed to get or play audio:', error);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [isFetching, isSpeaking]);
+
+  return {speak, isFetching, isSpeaking};
 };

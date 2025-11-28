@@ -2,6 +2,7 @@
 
 import {chatbotRespondsWithText, type ChatbotRespondsWithTextInput} from '@/ai/flows/answer-questions';
 import {convertTextToSpeech, type ConvertTextToSpeechInput} from '@/ai/flows/text-to-speech';
+import {summarizeChatHistory, type SummarizeChatHistoryInput} from '@/ai/flows/summarize-chat-history';
 
 export async function getBotResponse(input: ChatbotRespondsWithTextInput) {
   try {
@@ -21,4 +22,14 @@ export async function getAudioForText(input: ConvertTextToSpeechInput) {
         console.error('Error in getAudioForText:', error);
         return { error: 'Failed to generate audio.' };
     }
+}
+
+export async function getSummary(input: SummarizeChatHistoryInput) {
+  try {
+    const result = await summarizeChatHistory(input);
+    return { summary: result.summary };
+  } catch (error) {
+    console.error('Error in getSummary:', error);
+    return { error: 'Failed to generate summary.' };
+  }
 }

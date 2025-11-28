@@ -5,14 +5,16 @@ import {useState} from 'react';
 import ChatLayout from '@/components/chat/chat-layout';
 import ChatMessages from '@/components/chat/chat-messages';
 import ChatInput from '@/components/chat/chat-input';
-import {getBotResponse} from '@/app/actions';
+import {getBotResponse, getSummary} from '@/app/actions';
 import {v4 as uuidv4} from 'uuid';
 
-const MAX_HISTORY_LENGTH = 10; // Keep the last 10 messages (5 pairs)
+const RECENT_HISTORY_LENGTH = 6; // Keep the last 6 messages
+const SUMMARY_TRIGGER_LENGTH = 12; // Summarize when history exceeds 12 messages
 
 export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
 
   const handleSendMessage = async (messageContent: string) => {
     if (!messageContent.trim()) return;
@@ -27,14 +29,28 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      // Get the last 10 messages from the history for the API call
-      const chatHistoryForApi = newMessages.slice(
-        -MAX_HISTORY_LENGTH -1, -1
-      );
+      let currentSummary = summary;
+      let historyForApi = newMessages.slice(0, -1);
+
+      // Check if we need to generate a new summary
+      if (
+        historyForApi.length > SUMMARY_TRIGGER_LENGTH &&
+        historyForApi.length % RECENT_HISTORY_LENGTH === 0 // Re-summarize periodically
+      ) {
+        const summaryResult = await getSummary({chatHistory: historyForApi});
+        currentSummary = summaryResult.summary;
+        setSummary(currentSummary);
+      }
+      
+      // Determine what to send to the bot
+      if (historyForApi.length > RECENT_HISTORY_LENGTH) {
+        historyForApi = historyForApi.slice(-RECENT_HISTORY_LENGTH);
+      }
 
       const botResponse = await getBotResponse({
         query: messageContent,
-        chatHistory: chatHistoryForApi,
+        chatHistory: historyForApi,
+        summary: currentSummary,
       });
 
       const botMessage: ChatMessage = {

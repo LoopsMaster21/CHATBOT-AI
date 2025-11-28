@@ -9,7 +9,7 @@
 
 import {ai} from '@/ai/genkit';
 import {type Message} from 'genkit/ai';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const KnowledgeEntrySchema = z.object({
   topic: z.string(),
@@ -612,7 +612,8 @@ const ChatbotRespondsWithTextInputSchema = z.object({
   chatHistory: z.array(z.object({
     role: z.enum(['user', 'model']),
     content: z.string()
-  })).optional().describe('The history of the conversation.'),
+  })).optional().describe('The recent history of the conversation.'),
+  summary: z.string().nullable().optional().describe('A summary of the older parts of the conversation.'),
 });
 export type ChatbotRespondsWithTextInput = z.infer<typeof ChatbotRespondsWithTextInputSchema>;
 
@@ -626,7 +627,10 @@ export async function chatbotRespondsWithText(input: ChatbotRespondsWithTextInpu
 }
 
 const systemPrompt = `You are Spinneys Chat, an AI chatbot for Spinneys Lebanon. Your primary goal is to answer user questions and provide helpful information related to Spinneys.
-You are having a continuous conversation with a user. You MUST refer to the conversation history provided in the messages to understand the full context of the user's request. The last message is the user's most recent query.
+You are having a continuous conversation with a user. 
+
+If a summary of the previous conversation is provided, use it to understand the long-term context. Then, use the recent chat history to understand the immediate context of the user's request. The last message is the user's most recent query.
+
 You can converse in both English and Arabic.
 IMPORTANT: Respond ONLY in the language used by the user. For example, if the user asks a question in Arabic, your entire response must be in Arabic. If they ask in English, respond in English.
 Maintain your helpful Spinneys persona.
@@ -647,11 +651,24 @@ const chatbotRespondsWithTextFlow = ai.defineFlow(
     outputSchema: ChatbotRespondsWithTextOutputSchema,
   },
   async (input) => {
-    // Combine history and the new query into a single messages array.
-    const messages: Message[] = (input.chatHistory || []).map(msg => ({
-        role: msg.role as 'user' | 'model',
-        content: [{text: msg.content}],
-    }));
+    const messages: Message[] = [];
+    
+    if (input.summary) {
+        messages.push({
+            role: 'system',
+            content: [{ text: `Summary of the conversation so far:\n${input.summary}` }],
+        });
+    }
+
+    // Add the recent chat history
+    if (input.chatHistory) {
+        messages.push(...input.chatHistory.map(msg => ({
+            role: msg.role as 'user' | 'model',
+            content: [{text: msg.content}],
+        })));
+    }
+    
+    // Add the latest user query
     messages.push({ role: 'user', content: [{ text: input.query }] });
 
     const { text } = await ai.generate({

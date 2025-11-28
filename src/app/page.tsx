@@ -8,6 +8,8 @@ import ChatInput from '@/components/chat/chat-input';
 import {getBotResponse} from '@/app/actions';
 import {v4 as uuidv4} from 'uuid';
 
+const MAX_HISTORY_LENGTH = 10; // Keep the last 10 messages (5 pairs)
+
 export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +27,11 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const chatHistoryForApi = newMessages.slice(0, -1);
+      // Get the last 10 messages from the history for the API call
+      const chatHistoryForApi = newMessages.slice(
+        -MAX_HISTORY_LENGTH -1, -1
+      );
+
       const botResponse = await getBotResponse({
         query: messageContent,
         chatHistory: chatHistoryForApi,

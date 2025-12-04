@@ -656,7 +656,7 @@ const chatbotRespondsWithTextFlow = ai.defineFlow(
     if (input.summary) {
         messages.push({
             role: 'system',
-            content: [{ text: `Summary of the conversation so far:\n${input.summary}` }],
+            content: [{ text: `This is a summary of the conversation so far:\n${input.summary}` }],
         });
     }
 

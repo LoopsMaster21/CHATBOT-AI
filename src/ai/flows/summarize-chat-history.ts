@@ -8,7 +8,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import {z} from 'genkit';
 
 const SummarizeChatHistoryInputSchema = z.object({
   chatHistory: z.array(z.object({
@@ -27,7 +27,7 @@ export async function summarizeChatHistory(input: SummarizeChatHistoryInput): Pr
   return summarizeChatHistoryFlow(input);
 }
 
-const summarizePrompt = `Concisely summarize the following conversation between a user and an AI assistant. Capture the key topics and outcomes. The summary will be used as long-term memory for the AI.
+const summarizePrompt = `Concisely summarize the following conversation between a user and an AI assistant in the third person. Capture the key topics, questions, and outcomes. This summary will be used as long-term memory for the AI.
 
 Conversation History:
 {{#each chatHistory}}

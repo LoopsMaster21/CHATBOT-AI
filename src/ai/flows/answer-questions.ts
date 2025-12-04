@@ -676,5 +676,3 @@ const chatbotRespondsWithTextFlow = ai.defineFlow(
     };
   }
 );
-
-    

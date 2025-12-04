@@ -20,7 +20,7 @@ export async function summarizeChatHistory(input: SummarizeChatHistoryInput): Pr
   return summarizeChatHistoryFlow(input);
 }
 
-const summarizePrompt = `Concisely summarize the following conversation between a user and an AI assistant in the third person. Capture the key topics, questions, and outcomes. This summary will be used as long-term memory for the AI.
+const summarizePromptText = `Concisely summarize the following conversation between a user and an AI assistant in the third person. Capture the key topics, questions, and outcomes. This summary will be used as long-term memory for the AI.
 
 Conversation History:
 {{#each chatHistory}}
@@ -43,9 +43,11 @@ const summarizeChatHistoryFlow = ai.defineFlow(
 
     const { text } = await ai.generate({
         model: 'googleai/gemini-2.0-flash',
-        prompt: summarizePrompt,
-        context: {
+        prompt: {
+          template: summarizePromptText,
+          input: {
             chatHistory
+          }
         }
     });
 

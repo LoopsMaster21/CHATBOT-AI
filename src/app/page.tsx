@@ -31,15 +31,15 @@ export default function Home() {
     try {
       let currentSummary = summary;
       // The history for the API call excludes the latest user message
-      let historyForApi = newMessages.slice(0, -1);
+      const historyForSummary = newMessages.slice(0, -1);
 
       // Check if we need to generate a new summary.
       // We do this when the history hits the trigger length and periodically after that.
       if (
-        historyForApi.length >= SUMMARY_TRIGGER_LENGTH &&
-        (summary === null || historyForApi.length % RECENT_HISTORY_LENGTH === 0)
+        historyForSummary.length >= SUMMARY_TRIGGER_LENGTH &&
+        (summary === null || historyForSummary.length % RECENT_HISTORY_LENGTH === 0)
       ) {
-        const summaryResult = await getSummary({chatHistory: historyForApi});
+        const summaryResult = await getSummary({ chatHistory: historyForSummary });
         if (summaryResult.summary) {
           currentSummary = summaryResult.summary;
           setSummary(currentSummary);
@@ -47,13 +47,14 @@ export default function Home() {
       }
       
       // Determine what to send to the bot. We always send the most recent messages.
-      if (historyForApi.length > RECENT_HISTORY_LENGTH) {
-        historyForApi = historyForApi.slice(-RECENT_HISTORY_LENGTH);
+      let historyForBot = historyForSummary;
+      if (historyForBot.length > RECENT_HISTORY_LENGTH) {
+        historyForBot = historyForBot.slice(-RECENT_HISTORY_LENGTH);
       }
 
       const botResponse = await getBotResponse({
         query: messageContent,
-        chatHistory: historyForApi,
+        chatHistory: historyForBot,
         summary: currentSummary,
       });
 

@@ -1,11 +1,4 @@
 'use server';
-/**
- * @fileOverview Summarizes a chat conversation.
- *
- * - summarizeChatHistory - A function that summarizes a chat history.
- * - SummarizeChatHistoryInput - The input type for the summarizeChatHistory function.
- * - SummarizeChatHistoryOutput - The return type for the summarizeChatHistory function.
- */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';

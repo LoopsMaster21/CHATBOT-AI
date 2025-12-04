@@ -1,11 +1,4 @@
 'use server';
-/**
- * @fileOverview This file defines a Genkit flow for generating chatbot text responses.
- *
- * - chatbotRespondsWithText - A function that generates a chatbot text response.
- * - ChatbotRespondsWithTextInput - The input type for the chatbotRespondsWithText function.
- * - ChatbotRespondsWithTextOutput - The return type for the chatbotRespondsWithText function.
- */
 
 import {ai} from '@/ai/genkit';
 import {type Message} from 'genkit/ai';

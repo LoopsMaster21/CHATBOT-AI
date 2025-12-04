@@ -1,11 +1,4 @@
 'use server';
-/**
- * @fileOverview Summarizes the key information on a Spinneys product page.
- *
- * - summarizeProductInfo - A function that summarizes product information from a URL.
- * - SummarizeProductInfoInput - The input type for the summarizeProductInfo function.
- * - SummarizeProductInfoOutput - The return type for the summarizeProductInfo function.
- */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';

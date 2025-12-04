@@ -1,11 +1,4 @@
 'use server';
-/**
- * @fileOverview Converts text to speech using Google's TTS model.
- *
- * - convertTextToSpeech - A function that handles the text-to-speech conversion.
- * - ConvertTextToSpeechInput - The input type for the convertTextToSpeech function.
- * - ConvertTextToSpeechOutput - The return type for the convertTextToSpeech function.
- */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';

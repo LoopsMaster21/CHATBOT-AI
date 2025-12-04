@@ -296,7 +296,7 @@ const faqTool = ai.defineTool(
         keywords: ['app login', 'app account'],
       },
       {
-        question: 'I don’t have a Spinneyslebanon.com account. Can I still shop on the app?',
+        question: 'I don\'t have a Spinneyslebanon.com account. Can I still shop on the app?',
         answer:
           'You can search and browse products without an account. However, adding items to the cart, managing lists, and checking out require an account. You can sign up within the app.',
         keywords: ['shop without account', 'guest shopping app'],
@@ -641,6 +641,166 @@ Based on the tool's output, follow these rules:
 1. If the tool returns one or more URLs for a specialty page, your primary goal is to provide those links. Form a direct, helpful sentence that includes the *exact* URL returned by the tool. IMPORTANT: Do not format the URL as a markdown link (e.g., [text](url)). Just include the plain URL in your response. Do not ask clarifying questions if a relevant link is found.
 2. If the tool returns a specific FAQ answer, use that information to directly answer the user's question.
 3. If the user's question is not covered by the tool, or is a general conversation (like "hello" or "how are you?"), provide a helpful and informative response in character. If the question is not related to Spinneys, politely state that you can only assist with Spinneys-related inquiries.
+
+
+### **Spinneys ChatAssist: A Novel Architecture for Hybrid Conversational Memory and Server-Side Voice Synthesis in AI Chatbots**
+
+**Abstract**
+
+This paper presents the system architecture of Spinneys ChatAssist, a production-grade AI chatbot designed to enhance user engagement through advanced conversational memory and multi-modal interaction. Conventional chatbot designs often struggle with the trade-off between maintaining long-term conversational context and managing operational costs associated with large token payloads. To address this, we introduce a hybrid memory model that combines a short-term "sliding window" of recent messages with an automated, AI-driven summarization of the long-term conversation history. This approach ensures full contextual awareness while significantly reducing token consumption. Furthermore, we detail a robust server-side voice synthesis architecture that leverages Google's advanced Text-to-Speech (TTS) models, overcoming the limitations of client-side browser APIs to provide consistent, high-quality, and multilingual audio output. The resulting system demonstrates a scalable and efficient solution for building more natural, context-aware, and accessible conversational AI.
+
+---
+
+### **1. Introduction**
+
+The proliferation of Large Language Models (LLMs) has catalyzed a paradigm shift in human-computer interaction, with AI-powered chatbots becoming a primary interface for customer service, information retrieval, and user assistance. The primary goal in designing these systems is to create an experience that is not only accurate but also natural, intuitive, and efficient. An ideal chatbot should be able to recall previous parts of a conversation, understand context over extended interactions, and engage users through multiple modalities, including voice.
+
+However, achieving this ideal state presents significant technical challenges. The stateless nature of most web protocols means that conversational memory must be explicitly managed. The most common approach—sending the entire chat history with every new user query—is simple to implement but suffers from poor scalability. As a conversation grows, the token payload sent to the LLM increases linearly, leading to higher operational costs, slower response times, and potential truncation when context window limits are exceeded.
+
+Simultaneously, the integration of voice capabilities into web-based chatbots has often been constrained by the capabilities of the end-user's device. Client-side speech synthesis and recognition APIs, while convenient, are inconsistent across different browsers and operating systems. They typically offer a limited selection of lower-quality voices and may lack robust support for multiple languages, such as the bilingual English and Arabic requirement for Spinneys ChatAssist.
+
+This paper details the architecture of Spinneys ChatAssist, a chatbot developed for Spinneys Lebanon, as a case study in overcoming these challenges. We present a novel **Hybrid Memory Model** that dynamically summarizes the long-term conversation history, providing the LLM with both immediate and historical context in an optimized payload. Additionally, we describe a **Server-Side Voice Synthesis** architecture that decouples audio generation from the client, ensuring a consistent, high-quality, and multilingual voice experience for all users. Through these innovations, Spinneys ChatAssist serves as a blueprint for developing more sophisticated, efficient, and accessible conversational AI systems.
+
+---
+
+### **2. A Hybrid Model for Optimized Conversational Memory**
+
+The ability of a chatbot to maintain context over a long conversation is critical for a natural user experience. A bot that forgets what was discussed only a few messages prior feels robotic and unintelligent. The technical challenge lies in providing this context to the LLM without incurring prohibitive costs or performance penalties. We evaluated several common memory strategies and developed a hybrid approach that provides a superior balance of context retention and efficiency. Our method is a practical application of the "compressive memory" theory, where information is compressed to a dense summary to enable efficient long-term recall (Chen et al., 2025).
+
+#### **2.1. Limitations of Conventional Memory Strategies**
+
+*   **Full History Transmission**: This naive approach involves sending the entire conversation history with every API call. While it guarantees maximum context, it is the least scalable method. The token count grows with each turn, leading to a direct increase in API costs and latency. For a model like Google Gemini, where pricing is often based on the number of input and output characters, this method becomes financially unviable for long conversations.
+
+*   **Sliding Window (Short-Term Memory)**: A common optimization is to send only the last *N* messages (e.g., the last 10 turns). This is known as a "sliding window" approach. It effectively caps the token payload, controlling costs and maintaining fast response times. However, its significant drawback is "contextual amnesia." The model has no knowledge of any events or information exchanged before the window, leading to repetitive questions and an inability to reason about the conversation as a whole. For example, if a user mentions their location early in the chat, a sliding window model will forget it after a few more messages.
+
+#### **2.2. The Hybrid Summarization-Window Model**
+
+To overcome these limitations, we designed a hybrid memory model that leverages the strengths of both long-term and short-term memory through on-demand AI-powered summarization. This model divides the conversation into two distinct parts: the **long-term summary** and the **short-term window**.
+
+1.  **The Short-Term Window**: The system maintains a fixed-size window of the most recent messages (e.g., the last 6-10 turns). This provides the AI with the immediate, high-fidelity context of the current conversational thread. This is crucial for understanding follow-up questions and maintaining the natural back-and-forth of dialogue.
+
+2.  **The Long-Term Summary**: The core of our innovation lies in what the system does with messages that fall outside this window. Instead of discarding them, the application periodically uses a dedicated Genkit flow (\`summarizeChatHistoryFlow\`) to pass the older part of the conversation to the Gemini model. It instructs the model to create a concise, third-person summary of the key facts, entities, and user intentions discussed.
+
+**Implementation in \`src/app/page.tsx\`:**
+The logic is orchestrated in the main page component. When a user sends a message, the \`handleSendMessage\` function performs the following steps:
+- It checks if the total length of the conversation has exceeded a predefined threshold (e.g., 12 messages).
+- If the threshold is met, it triggers the \`getSummary\` server action, which executes the \`summarizeChatHistoryFlow\`. This flow takes the historical messages and generates a summary.
+- This summary is then stored in the component's state.
+- For the next request to the chatbot, the system sends a specially crafted payload containing three parts:
+    1.  The **long-term summary** (e.g., "The user has asked about store locations and is interested in vegan products.").
+    2.  The **short-term window** of the last few messages.
+    3.  The user's **newest query**.
+
+The system prompt for the main chatbot flow (\`chatbotRespondsWithTextFlow\`) is explicitly instructed to use the summary for long-term context while focusing on the recent messages for the immediate turn.
+
+#### **2.3. Advantages Over Other Optimized Memory Techniques**
+
+Our hybrid model offers distinct advantages over other advanced memory strategies, such as vector databases for semantic search.
+
+*   **Contextual Cohesion vs. Fact Retrieval**: Vector databases are excellent for retrieving specific, isolated facts from a past conversation (e.g., finding the message where a user mentioned their email). However, they often fail to capture the evolving *narrative* or *intent* of the conversation. A summary, by contrast, preserves the logical flow and relationship between different topics discussed over time.
+
+*   **Lower Implementation Complexity**: Setting up and managing a vector database adds significant architectural complexity, requiring processes for chunking text, generating embeddings, and performing semantic searches. Our summarization approach is self-contained within the existing LLM framework, leveraging the same Genkit and Gemini tools used for the main chat logic. This makes it simpler to implement and maintain.
+
+*   **Cost-Effectiveness at Scale**: While summarization incurs a small, periodic cost, it is far more efficient than sending an ever-growing history. It is also more cost-effective than a vector database approach, which requires paying for both the embedding generation and the semantic search queries on top of the main LLM call. Our model condenses a potentially vast history into a small, token-efficient summary, keeping the primary chat API calls lean and fast.
+
+In conclusion, the hybrid summarization-window model provides a highly effective and balanced solution, ensuring full conversational context in a scalable, performant, and economically viable manner.
+
+---
+
+### **3. System and User Interaction Model**
+
+To provide a clear model of the system's functionality from a user's perspective, we defined a set of use cases that illustrate the interactions between the primary actor (the "Chat User") and the Spinneys ChatAssist system. This model clarifies the system's boundaries and functional requirements.
+
+**Actors:**
+
+*   **Chat User:** The primary actor who interacts directly with the chatbot interface. Their goal is to get information, ask questions, and receive assistance.
+*   **Genkit AI System:** A secondary actor representing the backend AI services, which processes requests and generates intelligent responses.
+
+**Primary Use Cases:**
+
+The Chat User can initiate four high-level use cases:
+
+1.  **Send Text Message:** The user types a message in the input field and submits it. This action directly initiates the core conversational loop with the AI.
+2.  **Send Voice Message:** The user activates the microphone to speak their query. The system captures their speech and transcribes it to text before processing it, seamlessly integrating voice input into the text-based chat flow.
+3.  **Listen to Bot Response:** For any message generated by the chatbot, the user can click an icon to have the text read aloud. This enhances accessibility and provides a multi-modal experience.
+4.  **Download Chat History:** The user can export the entire conversation as a structured JSON file for their records.
+
+**System-Level Use Case Relationships:**
+
+The primary use cases initiated by the user trigger a series of internal system processes, which are best described using \`<<include>>\` relationships.
+
+*   The "Send Text Message" use case always \`<<includes>>\` the **Generate Text Response** use case, which is the central function where the Genkit AI System formulates an answer.
+*   Similarly, the "Send Voice Message" use case first \`<<includes>>\` the **Transcribe Speech to Text** use case. The resulting text output is then used to trigger the **Generate Text Response** use case.
+*   The **Generate Text Response** use case itself is complex, \`<<including>>\` two other critical system functions: **Search Knowledge Base** (via the \`faqTool\` to find factual answers) and **Summarize Chat History** (when the conversation exceeds a certain length, as described in our Hybrid Memory Model).
+*   Finally, the "Listen to Bot Response" use case \`<<includes>>\` the **Convert Text to Speech** use case, where the server generates the audio to be played back to the user.
+
+This use case model effectively separates user-initiated actions from the underlying system processes, providing a comprehensive overview of the application's interactive capabilities and internal logic.
+
+---
+
+### **4. System Architecture**
+
+The architecture of Spinneys ChatAssist is designed as a modern, three-tiered system that separates concerns between the client, the server, and external AI services. This structure ensures scalability, maintainability, and a robust user experience.
+
+**4.1. Client-Side Architecture (Next.js & React)**
+
+The client is a dynamic web application built with Next.js and React, responsible for rendering the user interface and managing user interactions.
+*   **UI Components:** The interface is composed of modular React components (\`/src/components\`) for the chat layout, message bubbles, and input controls. The main application view is handled by \`src/app/page.tsx\`, which orchestrates the user experience.
+*   **State Management:** The conversational state, including the complete message history and the long-term memory summary, is managed using standard React hooks (\`useState\`) within the main page component. This localized state management is simple and effective for a single-page chat application.
+*   **Browser APIs:** The client leverages two key browser APIs for multi-modal input/output. The **Web Speech API** is used within our \`useSpeechToText\` hook for real-time voice transcription. The standard **HTML5 Audio API** is used by the \`useTextToSpeech\` hook to play the audio received from the server.
+*   **Communication Layer:** Communication with the backend is handled exclusively through **Next.js Server Actions** (\`/src/app/actions.ts\`). These actions provide a secure and seamless RPC-style interface, allowing client-side components to call server-side functions (e.g., \`getBotResponse\`, \`getSummary\`) as if they were local asynchronous methods.
+
+**4.2. Server-Side Architecture (Next.js & Genkit)**
+
+The server-side logic runs within the Next.js Node.js environment and is powered by Google's Genkit framework.
+*   **Server Action Handlers:** The server actions serve as the entry point to the backend. They receive requests and data from the client and are responsible for invoking the appropriate AI logic.
+*   **Genkit AI Flows:** The core AI "brain" is encapsulated in a series of Genkit flows (\`/src/ai/flows/*.ts\`). These are instrumented, server-side modules that define specific AI-driven tasks:
+    *   **\`chatbotRespondsWithTextFlow\`:** The primary flow that orchestrates the generation of a chat response. It receives the user query, chat history, and memory summary. It uses a Genkit **Tool** (\`faqTool\`) to perform a preliminary search against an internal knowledge base. Based on the tool's output and the conversational context, it then invokes the Gemini model to generate a final text response.
+    *   **\`summarizeChatHistoryFlow\`:** A specialized flow responsible for executing the long-term memory strategy. It receives a portion of the chat history and uses Gemini to produce a concise summary.
+    *   **\`textToSpeechFlow\`:** This flow handles all voice generation. It receives text, sanitizes it by removing URLs, and calls the Google TTS model. The resulting audio is converted to a \`.wav\` data URI before being returned to the client.
+
+**4.3. External Google AI Services**
+
+The server-side Genkit flows act as an abstraction layer that communicates with powerful, managed Google AI services.
+*   **Google Gemini Model:** The foundational LLM used for all natural language understanding, generation, and summarization tasks. Its flexibility and reasoning capabilities power the core intelligence of the chatbot.
+*   **Google Text-to-Speech (TTS) Model:** A specialized model (\`gemini-2.5-flash-preview-tts\`) that generates high-quality, lifelike speech. A key feature leveraged by our architecture is its ability to automatically detect the input language and select an appropriate voice, which is critical for the application's bilingual requirements.
+
+This tiered architecture allows each component to focus on its specific responsibility: the client on user interaction, the server on orchestrating AI logic, and the external services on providing state-of-the-art AI capabilities.
+
+---
+
+### **5. A Robust Server-Side Architecture for Multilingual Voice Interaction**
+
+Enabling natural voice interaction is a key step in making chatbots more accessible and user-friendly. For Spinneys ChatAssist, this meant implementing both Speech-to-Text (STT) for user input and Text-to-Speech (TTS) for chatbot responses. Critically, the solution needed to be reliable across all browsers and expertly handle both English and Arabic.
+
+#### **5.1. The Challenge with Client-Side Voice APIs**
+
+The most direct way to implement voice in a web app is to use the browser's built-in Web Speech API. However, this approach has several critical drawbacks that made it unsuitable for our needs:
+*   **Inconsistent Browser Support**: The API is not standardized. Implementations vary significantly between Chrome, Firefox, and Safari, and it is entirely absent in some browsers.
+*   **Limited Voice and Language Selection**: The available voices are dependent on the user's operating system. This results in an inconsistent user experience and, most importantly, often lacks support for high-quality voices in specific languages like Arabic.
+*   **Lower Quality Synthesis**: The quality of client-side TTS is generally inferior to the advanced, AI-powered models available via server-side APIs.
+
+#### **5.2. The Server-Side Synthesis Solution**
+
+To overcome these issues, we designed a robust architecture that centralizes voice synthesis on the server, ensuring a consistent, high-quality experience for all users, regardless of their browser or device.
+
+**Speech-to-Text (User Input):**
+For user input, we still leverage the browser's Web Speech API via the \`useSpeechToText\` custom hook. This is a pragmatic choice because STT is more widely supported and less sensitive to quality variations than TTS. The hook captures audio from the microphone, transcribes it to text in real-time, and populates the chat input field. This text is then sent to the backend like any other message.
+
+**Text-to-Speech (Chatbot Output):**
+The core of our voice innovation lies in the server-side generation of the chatbot's voice.
+1.  **Client-Side Trigger**: When the user clicks the "play audio" button on a message, the \`useTextToSpeech\` hook is invoked. Instead of synthesizing speech in the browser, it makes a call to the \`getAudioForText\` server action.
+
+2.  **Server-Side Genkit Flow (\`textToSpeechFlow\`)**: This server action triggers a dedicated Genkit flow designed for TTS.
+    *   **Model Selection**: The flow is configured to use Google's \`gemini-2.5-flash-preview-tts\` model. This is a powerful, multimodal model capable of high-fidelity speech synthesis.
+    *   **Automatic Language Detection**: Crucially, we do not manually specify the language or voice. The model is advanced enough to automatically detect the language of the input text (whether English, Arabic, or even mixed) and select an appropriate, high-quality voice. This eliminated a significant point of failure from our earlier implementations, where manual voice selection caused errors.
+    *   **URL Stripping**: Before sending the text to the model, the flow sanitizes the input by removing any URLs. This prevents the TTS model from attempting to read out long, nonsensical web addresses, which improves the naturalness of the speech.
+
+3.  **Data Formatting and Return**: The TTS model returns raw audio data. The flow converts this data into the standard \`.wav\` format and encodes it into a Base64 data URI string (\`data:audio/wav;base64,...\`).
+
+4.  **Client-Side Playback**: The data URI is returned to the \`useTextToSpeech\` hook on the client. The hook simply sets this URI as the \`src\` of a standard HTML \`<audio>\` element and calls \`.play()\`. This approach is universally compatible and ensures that every user hears the exact same high-quality, server-generated audio.
+
+By centralizing TTS on the server, we bypass the inconsistencies of browser APIs and guarantee that every user hears the intended high-quality, multilingual voice of the Spinneys ChatAssist. This robust architecture is key to providing a premium and accessible user experience.
 `;
 
 
@@ -683,3 +843,5 @@ const chatbotRespondsWithTextFlow = ai.defineFlow(
     };
   }
 );
+
+    
